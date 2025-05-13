@@ -1,0 +1,15 @@
+# PyCharm project settings
+.idea/
+
+# Virtual environment
+.venv/
+
+# __pycache__ and other Python artifacts
+__pycache__/
+*.py[cod]
+
+# OS files
+.DS_Store
+
+# Environment files (if any)
+.env

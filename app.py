@@ -1,37 +1,44 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import joblib
 import numpy as np
 
 app = Flask(__name__)
 
-# Load your pre-trained RF-HT model (predicts S11 from five geometry parameters)
+# Load the pre-trained model
 model = joblib.load('rf_ht_model.joblib')
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
+# Homepage Route
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+# Optimizer Page Route (Form & Prediction)
+@app.route('/optimizer', methods=['GET', 'POST'])
+def optimizer():
     result = None
     if request.method == 'POST':
-        # 1. Extract user inputs from form
-        freq          = float(request.form['frequency'])           # Frequency (GHz)
-        patch_len     = float(request.form['patch_length'])        # Patch length (mm)
-        patch_wid     = float(request.form['patch_width'])         # Patch width (mm)
-        substr_len    = float(request.form['substrate_length'])    # Substrate length (mm)
-        substr_wid    = float(request.form['substrate_width'])     # Substrate width (mm)
+        try:
+            # Extract inputs
+            freq = float(request.form['frequency'])             # Frequency (GHz)
+            patch_len = float(request.form['patch_length'])     # Patch length (mm)
+            patch_wid = float(request.form['patch_width'])      # Patch width (mm)
+            substr_len = float(request.form['substrate_length'])# Substrate length (mm)
+            substr_wid = float(request.form['substrate_width'])# Substrate width (mm)
 
-        # 2. Prepare feature vector (must match training order)
-        X = np.array([[freq, patch_len, patch_wid, substr_len, substr_wid]])
+            # Create feature array
+            features = np.array([[freq, patch_len, patch_wid, substr_len, substr_wid]])
 
-        # 3. Predict S11 (dB)
-        s11_pred = model.predict(X)[0]
+            # Predict using the loaded model
+            s11_pred = model.predict(features)[0]
 
-        # 4. Round and format result
-        result = {
-            's11_db': f"{s11_pred:.2f}"
-        }
+            # Round and store result
+            result = {'s11_db': f"{s11_pred:.2f}"}
 
-    # 5. Render the template with or without result
-    return render_template('index.html', result=result)
+        except Exception as e:
+            result = {'s11_db': f"Error: {str(e)}"}
 
+    return render_template('optimizer.html', result=result)
+
+# Run the app
 if __name__ == '__main__':
-    # Run on localhost:5000 by default
     app.run(debug=True)
